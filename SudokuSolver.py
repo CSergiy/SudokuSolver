@@ -306,43 +306,37 @@ def find_empty_location(board):
     return None
 
 def main():
-    # Step 1: Capture the Sudoku puzzle screenshot
-    screenshot = acquire_image()
-    visualize_image(screenshot, "Original Screenshot")
-
-    # Step 2: Preprocess the image to facilitate grid detection + visualizatoin
-    preprocessed_image = preprocess_image(screenshot)
-    visualize_image(preprocessed_image, "Preprocessed Image")
-
-    # Step 3: Detect the Sudoku grid and extract individual cells + visualization
-    cells = detect_sudoku_grid(preprocessed_image)
-    if not cells:
-        print("Failed to detect Sudoku grid or extract cells.")
-        return
-    visualize_cells_grid(cells, "Extracted Cells")
+    st.title("Sudoku Solver")
+    uploaded_file = st.file_uploader("Upload an image of the Sudoku puzzle", type=["png", "jpg", "jpeg"])
     
-    # Step 4: Crop the cells to remove borders + visualization
-    cropped_cells = crop_cells_grid(cells, border_size=6)
-    visualize_cells_grid(cropped_cells, "Cropped Cells")
+    if uploaded_file is not None:
+        # Convert the uploaded file to an image and display it
+        image = Image.open(uploaded_file).convert('RGB')
+        st.image(image, caption="Uploaded Sudoku Puzzle", use_column_width=True)
+        
+        # Process the uploaded image to prepare for digit recognition
+        preprocessed_image = preprocess_image(image)
+        cells = detect_sudoku_grid(preprocessed_image)
+        
+        if cells:
+            cropped_cells = crop_cells_grid(cells)
+            # Load your pre-trained digit recognition model
+            model_path = 'my_mnist_model.keras'
+            model = load_model(model_path)
+            
+            # Assuming the existence of functions to recognize digits and solve the Sudoku
+            sudoku_matrix = recognize_digits(cropped_cells, model)  # Adapt function signature if necessary
+            if solve_sudoku(sudoku_matrix):  # Implement this to solve the puzzle and modify sudoku_matrix in place
+                # Convert the solved Sudoku grid to a displayable format
+                # Function to convert matrix to string needs to be implemented based on your format
+                solved_grid_str = convert_sudoku_matrix_to_str(sudoku_matrix)  # Placeholder, implement this function
+                st.subheader("Solved Sudoku Puzzle:")
+                st.text(solved_grid_str)
+            else:
+                st.error("Failed to solve the Sudoku puzzle.")
+        else:
+            st.error("Failed to detect the Sudoku grid. Please try another image.")
 
-    # Step 5: Check thresholding for empty cells and capture empty cell indices
-    empty_cells_indices = print_cell_grid_status(cropped_cells, threshold=1)
-
-    # Step 6: Preprocess the cropped cells for MNIST (visualization step included)
-    visualize_cells_grid_for_mnist(cropped_cells)
-
-    # Path to the pre-trained digit recognition model
-    model_path = 'my_mnist_model.keras'
-    model = load_model(model_path)
-    
-    # Step 7: Recognize digits within each cell to populate the Sudoku matrix
-    # Now passing the empty_cells_indices to recognize_digits
-    sudoku_matrix = recognize_digits(cropped_cells, model, empty_cells_indices)
-
-    #print_sudoku_matrix(sudoku_matrix)
-
-    display_sudoku_solution(sudoku_matrix)
-
-# Run the main program
 if __name__ == "__main__":
     main()
+
